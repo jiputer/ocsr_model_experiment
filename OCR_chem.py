@@ -3,10 +3,11 @@
 from PIL import Image
 from sklearn.model_selection import train_test_split
 import torch
+import torch.nn.functional as F
 from torch.autograd import Variable
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
-from torch.nn import Conv2d, ReLU, MaxPool2d, Linear, Sequential
+from torch.nn import Conv2d, ReLU, MaxPool2d, Linear, Sequential, Flatten
 import torchvision.transforms as transforms
 import pandas as pd
 import os
@@ -72,7 +73,7 @@ def parse(folder_path):
 #%% 
 X, Y = parse('/Users/jp/Documents/projects/OCSR_model/dataset') 
 
-#%%
+#%% splitting data
 train_x, val_x, train_y,val_y = train_test_split(X, Y, test_size= 0.10, random_state=69)
 train_x = torch.stack(train_x) # inputs
 train_y = torch.stack(train_y)
@@ -80,52 +81,43 @@ val_x = torch.stack(val_x)
 val_y = torch.stack(val_y)
 
 
-#%% cheating using pytorch (for now)
+#%% the model
+class OCSR_model(nn.Module):
+    pass
+
+class ConvRNN(nn.Module):
+    pass
+
+
+#%% creating the model
 model = Sequential(
-    Conv2d(64, 64, kernel_size=3, stride=3),
-    MaxPool2d(3, 2),
+    Conv2d(64, 64, kernel_size=5, stride=2),
+    MaxPool2d(12, 4),
     Conv2d(in_channels=64, out_channels=64, kernel_size=4),
-    MaxPool2d(3, 2),
+    MaxPool2d(12, 4),
+    Flatten(),
     ReLU()
 )
+
+#%% Training and testing functions
+def train(dataloader, model, loss_fn, optimizer):
+    pass
+
+def test(dataloader, model, loss_fn):
+    pass
+
+
+
+
+
+# %% training and validating 
 optimizer = torch.optim.SGD(model.parameters(), lr=0.001)
 loss_function = nn.CrossEntropyLoss()
 
 train_data = TensorDataset(torch.tensor(train_x).to(torch.float32), torch.tensor(train_y.to(torch.float32)))
 test_data = TensorDataset(torch.tensor(val_x).to(torch.float32), torch.tensor(val_y.to(torch.float32)))
-loaded_train = DataLoader(train_data, batch_size=5, shuffle=True)
-loaded_test = DataLoader(test_data, batch_size=5, shuffle=True)
-
-def train(dataloader, model, loss_fn, optimizer):
-    size = len(dataloader.dataset)
-    for batch, (X, y) in enumerate(dataloader):
-       
-        pred = model(X.to(torch.float32))
-        loss = loss_fn(pred, y)
-
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-        if batch % 1000 == 0:
-            loss, current = loss.item(), batch * len(X)
-            print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
-
-def test(dataloader, model, loss_fn):
-    size = len(dataloader.dataset)
-    num_batches = len(dataloader)
-    test_loss, correct = 0, 0
-
-    with torch.no_grad():
-        for X, y in dataloader:
-            #print(X)
-            pred = model(X.to(torch.float32))
-            test_loss += loss_fn(pred, y).item()
-            correct += (pred.argmax(1) == y).type(torch.float).sum().item()
-
-    test_loss /= num_batches
-    correct /= size
-    print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+loaded_train = DataLoader(train_data, batch_size=64, shuffle=True)
+loaded_test = DataLoader(test_data, batch_size=64, shuffle=True)
 
 epochs = 5
 for t in range(epochs):
